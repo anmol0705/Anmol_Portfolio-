@@ -1,0 +1,249 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  
+  /* Terminal Luxury Colors */
+  --color-obsidian: #0a0a0a;
+  --color-neon: #00ff88;
+  --color-cyber: #ffcc00;
+  --color-terminal-green: #39ff14;
+  --color-terminal-amber: #ffb000;
+  --color-terminal-cyan: #00ffff;
+}
+
+:root {
+  --radius: 0.625rem;
+  
+  /* Terminal Luxury Dark Theme - Always */
+  --background: #000000;
+  --foreground: #f0f0f0;
+  --card: #0a0a0a;
+  --card-foreground: #f0f0f0;
+  --popover: #0a0a0a;
+  --popover-foreground: #f0f0f0;
+  --primary: #00ff88;
+  --primary-foreground: #000000;
+  --secondary: #141414;
+  --secondary-foreground: #f0f0f0;
+  --muted: #141414;
+  --muted-foreground: #888888;
+  --accent: #00ff88;
+  --accent-foreground: #000000;
+  --destructive: #ff3333;
+  --border: rgba(0, 255, 136, 0.1);
+  --input: rgba(0, 255, 136, 0.1);
+  --ring: #00ff88;
+  --chart-1: #00ff88;
+  --chart-2: #ffcc00;
+  --chart-3: #00ffff;
+  --chart-4: #ff6600;
+  --chart-5: #ff00ff;
+  --sidebar: #050505;
+  --sidebar-foreground: #f0f0f0;
+  --sidebar-primary: #00ff88;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #141414;
+  --sidebar-accent-foreground: #f0f0f0;
+  --sidebar-border: rgba(0, 255, 136, 0.1);
+  --sidebar-ring: #00ff88;
+}
+
+.dark {
+  --background: #000000;
+  --foreground: #f0f0f0;
+  --card: #0a0a0a;
+  --card-foreground: #f0f0f0;
+  --popover: #0a0a0a;
+  --popover-foreground: #f0f0f0;
+  --primary: #00ff88;
+  --primary-foreground: #000000;
+  --secondary: #141414;
+  --secondary-foreground: #f0f0f0;
+  --muted: #141414;
+  --muted-foreground: #888888;
+  --accent: #00ff88;
+  --accent-foreground: #000000;
+  --destructive: #ff3333;
+  --border: rgba(0, 255, 136, 0.1);
+  --input: rgba(0, 255, 136, 0.1);
+  --ring: #00ff88;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Custom Scrollbar - Terminal Style */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #00ff8840;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00ff8880;
+}
+
+/* Terminal Cursor Blink */
+@keyframes cursor-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.cursor-blink {
+  animation: cursor-blink 1s step-end infinite;
+}
+
+/* Glow Effects */
+.glow-neon {
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.3),
+              0 0 40px rgba(0, 255, 136, 0.2),
+              0 0 60px rgba(0, 255, 136, 0.1);
+}
+
+.glow-cyber {
+  box-shadow: 0 0 20px rgba(255, 204, 0, 0.3),
+              0 0 40px rgba(255, 204, 0, 0.2),
+              0 0 60px rgba(255, 204, 0, 0.1);
+}
+
+.text-glow-neon {
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.5),
+               0 0 20px rgba(0, 255, 136, 0.3),
+               0 0 40px rgba(0, 255, 136, 0.2);
+}
+
+.text-glow-cyber {
+  text-shadow: 0 0 10px rgba(255, 204, 0, 0.5),
+               0 0 20px rgba(255, 204, 0, 0.3),
+               0 0 40px rgba(255, 204, 0, 0.2);
+}
+
+/* Grid Background */
+.terminal-grid {
+  background-image: 
+    linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Scan Line Effect */
+.scan-line {
+  position: relative;
+  overflow: hidden;
+}
+
+.scan-line::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(to bottom, transparent, #00ff8820, transparent);
+  animation: scan 8s linear infinite;
+}
+
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Noise Texture Overlay */
+.noise-overlay {
+  position: relative;
+}
+
+.noise-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Selection */
+::selection {
+  background: rgba(0, 255, 136, 0.3);
+  color: #00ff88;
+}
+
+/* Lenis Smooth Scroll */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
