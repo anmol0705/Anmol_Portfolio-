@@ -1,223 +1,85 @@
 'use client';
 
-import { useRef, useMemo, useEffect, useState } from 'react';
+import { useRef, useMemo, useEffect, useState, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Points, PointMaterial } from '@react-three/drei';
+import { MeshTransmissionMaterial, Sphere, Float, PerformanceMonitor } from '@react-three/drei';
+import { EffectComposer, Bloom, ChromaticAberration } from '@react-three/postprocessing';
+import { BlendFunction } from 'postprocessing';
 import * as THREE from 'three';
 import { useMobile } from '@/hooks/use-mobile';
+import { useAudio } from '@/context/AudioContext';
 
 // ============================================================================
-// QUANTUM CORE SHADER - Vertex Shader
+// DATA STREAM PARTICLES — orbit around the glass core
 // ============================================================================
-const quantumVertexShader = `
-  uniform float uTime;
-  uniform float uMouseX;
-  uniform float uMouseY;
-  
-  varying vec3 vPosition;
-  varying float vIntensity;
-  varying float vDistance;
-  
-  //
-  // GLSL textureless classic 3D noise
-  //
-  vec4 permute(vec4 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
-  vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-  
-  float snoise(vec3 v) {
-    const vec2 C = vec2(1.0/6.0, 1.0/3.0);
-    const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-    
-    vec3 i  = floor(v + dot(v, C.yyy));
-    vec3 x0 = v - i + dot(i, C.xxx);
-    
-    vec3 g = step(x0.yzx, x0.xyz);
-    vec3 l = 1.0 - g;
-    vec3 i1 = min(g.xyz, l.zxy);
-    vec3 i2 = max(g.xyz, l.zxy);
-    
-    vec3 x1 = x0 - i1 + C.xxx;
-    vec3 x2 = x0 - i2 + C.yyy;
-    vec3 x3 = x0 - D.yyy;
-    
-    i = mod(i, 289.0);
-    vec4 p = permute(permute(permute(
-      i.z + vec4(0.0, i1.z, i2.z, 1.0))
-      + i.y + vec4(0.0, i1.y, i2.y, 1.0))
-      + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-      
-    float n_ = 1.0/7.0;
-    vec3 ns = n_ * D.wyz - D.xzx;
-    
-    vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-    
-    vec4 x_ = floor(j * ns.z);
-    vec4 y_ = floor(j - 7.0 * x_);
-    
-    vec4 x = x_ *ns.x + ns.yyyy;
-    vec4 y = y_ *ns.x + ns.yyyy;
-    vec4 h = 1.0 - abs(x) - abs(y);
-    
-    vec4 b0 = vec4(x.xy, y.xy);
-    vec4 b1 = vec4(x.zw, y.zw);
-    
-    vec4 s0 = floor(b0)*2.0 + 1.0;
-    vec4 s1 = floor(b1)*2.0 + 1.0;
-    vec4 sh = -step(h, vec4(0.0));
-    
-    vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
-    vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
-    
-    vec3 p0 = vec3(a0.xy, h.x);
-    vec3 p1 = vec3(a0.zw, h.y);
-    vec3 p2 = vec3(a1.xy, h.z);
-    vec3 p3 = vec3(a1.zw, h.w);
-    
-    vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
-    p0 *= norm.x;
-    p1 *= norm.y;
-    p2 *= norm.z;
-    p3 *= norm.w;
-    
-    vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-    m = m * m;
-    return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
-  }
-  
-  void main() {
-    vPosition = position;
-    
-    // Noise-based displacement
-    float noise = snoise(position * 0.5 + uTime * 0.2);
-    float noise2 = snoise(position * 1.0 - uTime * 0.15);
-    
-    // Mouse influence
-    vec3 mouseInfluence = vec3(uMouseX * 0.3, uMouseY * 0.3, 0.0);
-    float mouseDistance = length(position.xy - mouseInfluence.xy);
-    
-    // Pulsing effect
-    float pulse = sin(uTime * 2.0 + length(position) * 2.0) * 0.5 + 0.5;
-    
-    // Calculate intensity for fragment shader
-    vIntensity = (noise * 0.5 + 0.5) * pulse;
-    vDistance = mouseDistance;
-    
-    // Displace vertices
-    vec3 newPosition = position;
-    newPosition += normal * noise * 0.3;
-    newPosition += normal * noise2 * 0.15;
-    newPosition += normal * pulse * 0.05;
-    
-    // Mouse attraction
-    newPosition += normalize(mouseInfluence - position) * (1.0 / (mouseDistance + 1.0)) * 0.1;
-    
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
-    gl_PointSize = 2.0 + vIntensity * 3.0;
-  }
-`;
+function DataStream() {
+  const pointsRef = useRef<THREE.Points>(null);
 
-// ============================================================================
-// QUANTUM CORE SHADER - Fragment Shader
-// ============================================================================
-const quantumFragmentShader = `
-  uniform float uTime;
-  uniform vec3 uColor1;
-  uniform vec3 uColor2;
-  uniform vec3 uColor3;
-  
-  varying vec3 vPosition;
-  varying float vIntensity;
-  varying float vDistance;
-  
-  void main() {
-    // Create circular point
-    vec2 center = gl_PointCoord - vec2(0.5);
-    float dist = length(center);
-    if (dist > 0.5) discard;
-    
-    // Color gradient based on position and intensity
-    float colorMix = sin(vPosition.y * 3.0 + uTime) * 0.5 + 0.5;
-    vec3 color = mix(uColor1, uColor2, colorMix);
-    color = mix(color, uColor3, vIntensity);
-    
-    // Soft edge
-    float alpha = 1.0 - smoothstep(0.3, 0.5, dist);
-    alpha *= vIntensity * 0.8 + 0.2;
-    
-    // Glow effect
-    float glow = exp(-dist * 3.0);
-    color += uColor1 * glow * 0.5;
-    
-    gl_FragColor = vec4(color, alpha);
-  }
-`;
+  const particleData = useMemo(() => {
+    const count = 2000;
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
 
-// ============================================================================
-// QUANTUM CORE MESH COMPONENT
-// ============================================================================
-interface QuantumCoreProps {
-  mouseX: number;
-  mouseY: number;
-}
+    const cyan = new THREE.Color('#06b6d4');
+    const violet = new THREE.Color('#8b5cf6');
+    const white = new THREE.Color('#e4e4e7');
 
-function QuantumCore({ mouseX, mouseY }: QuantumCoreProps) {
-  const meshRef = useRef<THREE.Points>(null);
-  const materialRef = useRef<THREE.ShaderMaterial>(null);
-  const { viewport } = useThree();
+    for (let i = 0; i < count; i++) {
+      const radius = 1.8 + Math.random() * 2.2;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = (Math.random() - 0.5) * Math.PI;
 
-  // Generate icosahedron points with subdivisions
-  const geometry = useMemo(() => {
-    const geo = new THREE.IcosahedronGeometry(2, 20);
-    const positions = geo.attributes.position.array;
-    const normals = new Float32Array(positions.length);
+      positions[i * 3] = radius * Math.cos(phi) * Math.cos(theta);
+      positions[i * 3 + 1] = radius * Math.cos(phi) * Math.sin(theta);
+      positions[i * 3 + 2] = radius * Math.sin(phi);
 
-    // Calculate normals
-    for (let i = 0; i < positions.length; i += 3) {
-      const x = positions[i];
-      const y = positions[i + 1];
-      const z = positions[i + 2];
-      const len = Math.sqrt(x * x + y * y + z * z);
-      normals[i] = x / len;
-      normals[i + 1] = y / len;
-      normals[i + 2] = z / len;
+      const t = Math.random();
+      const color = t < 0.5
+        ? cyan.clone().lerp(violet, t * 2)
+        : violet.clone().lerp(white, (t - 0.5) * 2);
+
+      colors[i * 3] = color.r;
+      colors[i * 3 + 1] = color.g;
+      colors[i * 3 + 2] = color.b;
     }
 
-    geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
-    return geo;
+    return { positions, colors };
   }, []);
 
-  // Uniforms
-  const uniforms = useMemo(() => ({
-    uTime: { value: 0 },
-    uMouseX: { value: 0 },
-    uMouseY: { value: 0 },
-    uColor1: { value: new THREE.Color('#00ff88') },
-    uColor2: { value: new THREE.Color('#00ffff') },
-    uColor3: { value: new THREE.Color('#ffcc00') },
-  }), []);
+  // Strict WebGL Cleanup
+  useEffect(() => {
+    return () => {
+      // Allow garbage collection for the heavy typed arrays
+      (particleData as any).positions = null;
+      (particleData as any).colors = null;
+    };
+  }, [particleData]);
 
-  useFrame((state) => {
-    if (meshRef.current) {
-      // Rotate slowly
-      meshRef.current.rotation.x = state.clock.elapsedTime * 0.05;
-      meshRef.current.rotation.y = state.clock.elapsedTime * 0.08;
-    }
-
-    if (materialRef.current) {
-      materialRef.current.uniforms.uTime.value = state.clock.elapsedTime;
-      materialRef.current.uniforms.uMouseX.value = mouseX;
-      materialRef.current.uniforms.uMouseY.value = mouseY;
+  useFrame(({ clock }) => {
+    if (pointsRef.current) {
+      pointsRef.current.rotation.y = clock.getElapsedTime() * 0.05;
+      pointsRef.current.rotation.x = Math.sin(clock.getElapsedTime() * 0.03) * 0.1;
     }
   });
 
   return (
-    <points ref={meshRef} geometry={geometry}>
-      <shaderMaterial
-        ref={materialRef}
-        vertexShader={quantumVertexShader}
-        fragmentShader={quantumFragmentShader}
-        uniforms={uniforms}
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          args={[particleData.positions, 3]}
+        />
+        <bufferAttribute
+          attach="attributes-color"
+          args={[particleData.colors, 3]}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.015}
+        vertexColors
         transparent
+        opacity={0.7}
+        sizeAttenuation
         depthWrite={false}
         blending={THREE.AdditiveBlending}
       />
@@ -226,159 +88,222 @@ function QuantumCore({ mouseX, mouseY }: QuantumCoreProps) {
 }
 
 // ============================================================================
-// DATA STREAM PARTICLES
-// ============================================================================
-function DataStream() {
-  const pointsRef = useRef<THREE.Points>(null);
-  const particleCount = 2000;
-
-  const [positions, colors] = useMemo(() => {
-    const pos = new Float32Array(particleCount * 3);
-    const cols = new Float32Array(particleCount * 3);
-
-    for (let i = 0; i < particleCount; i++) {
-      const i3 = i * 3;
-      // Spherical distribution
-      const radius = 3 + Math.random() * 4;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-
-      pos[i3] = radius * Math.sin(phi) * Math.cos(theta);
-      pos[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-      pos[i3 + 2] = radius * Math.cos(phi);
-
-      // Color variation
-      const colorChoice = Math.random();
-      if (colorChoice < 0.5) {
-        cols[i3] = 0;
-        cols[i3 + 1] = 1;
-        cols[i3 + 2] = 0.53;
-      } else if (colorChoice < 0.8) {
-        cols[i3] = 0;
-        cols[i3 + 1] = 0.8;
-        cols[i3 + 2] = 0.8;
-      } else {
-        cols[i3] = 1;
-        cols[i3 + 1] = 0.8;
-        cols[i3 + 2] = 0;
-      }
-    }
-
-    return [pos, cols];
-  }, []);
-
-  useFrame((state) => {
-    if (pointsRef.current) {
-      pointsRef.current.rotation.y = state.clock.elapsedTime * 0.02;
-      pointsRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.1) * 0.1;
-    }
-  });
-
-  return (
-    <Points ref={pointsRef} positions={positions} stride={3}>
-      <PointMaterial
-        transparent
-        color="#00ff88"
-        size={0.02}
-        sizeAttenuation
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
-        opacity={0.6}
-      />
-    </Points>
-  );
-}
-
-// ============================================================================
-// WIREFRAME GEOMETRY
+// WIREFRAME SHELL — geometric cage around the core
 // ============================================================================
 function WireframeSphere() {
   const meshRef = useRef<THREE.Mesh>(null);
+  const geometry = useMemo(() => new THREE.IcosahedronGeometry(2.2, 1), []);
+  const material = useMemo(() => new THREE.MeshBasicMaterial({
+    color: '#06b6d4',
+    wireframe: true,
+    transparent: true,
+    opacity: 0.06,
+  }), []);
 
-  useFrame((state) => {
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+      material.dispose();
+    };
+  }, [geometry, material]);
+
+  useFrame(({ clock }) => {
     if (meshRef.current) {
-      meshRef.current.rotation.x = state.clock.elapsedTime * 0.1;
-      meshRef.current.rotation.z = state.clock.elapsedTime * 0.05;
+      meshRef.current.rotation.y = clock.getElapsedTime() * 0.08;
+      meshRef.current.rotation.z = Math.sin(clock.getElapsedTime() * 0.05) * 0.15;
     }
   });
 
-  return (
-    <mesh ref={meshRef}>
-      <icosahedronGeometry args={[1.8, 1]} />
-      <meshBasicMaterial
-        color="#00ff88"
-        wireframe
-        transparent
-        opacity={0.15}
-      />
-    </mesh>
-  );
+  return <mesh ref={meshRef} geometry={geometry} material={material} />;
 }
 
 // ============================================================================
-// INNER CORE
+// INNER CORE — emissive nucleus that glows through the glass
 // ============================================================================
 function InnerCore() {
   const meshRef = useRef<THREE.Mesh>(null);
+  const geometry = useMemo(() => new THREE.SphereGeometry(1, 32, 32), []);
+  const material = useMemo(() => new THREE.MeshStandardMaterial({
+    color: '#22d3ee',
+    emissive: '#06b6d4',
+    emissiveIntensity: 2.5,
+    toneMapped: false,
+  }), []);
 
-  useFrame((state) => {
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+      material.dispose();
+    };
+  }, [geometry, material]);
+
+  useFrame(({ clock }) => {
     if (meshRef.current) {
-      const scale = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+      const scale = 0.3 + Math.sin(clock.getElapsedTime() * 1.5) * 0.05;
       meshRef.current.scale.setScalar(scale);
     }
   });
 
+  return <mesh ref={meshRef} geometry={geometry} material={material} />;
+}
+
+// ============================================================================
+// GLASS CORE — MeshTransmissionMaterial sphere
+// ============================================================================
+function GlassCore({ mouseX, mouseY, audioFrequency }: { mouseX: number; mouseY: number; audioFrequency: number }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const materialRef = useRef<any>(null);
+
+  const customUniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uAudioFrequency: { value: 0 },
+    }),
+    []
+  );
+
+  useFrame(({ clock }) => {
+    if (meshRef.current) {
+      meshRef.current.rotation.y = clock.getElapsedTime() * 0.1;
+      meshRef.current.rotation.x = mouseY * 0.2;
+      meshRef.current.rotation.z = mouseX * 0.15;
+    }
+    // Update the custom shader uniform
+    customUniforms.uTime.value = clock.getElapsedTime();
+    customUniforms.uAudioFrequency.value = audioFrequency;
+  });
+
+  const onBeforeCompile = useCallback(
+    (shader: any) => {
+      // 1. Inject custom uniform
+      shader.uniforms.uTime = customUniforms.uTime;
+      shader.uniforms.uAudioFrequency = customUniforms.uAudioFrequency;
+
+      // 2. Add uniform declaration to vertex shader
+      shader.vertexShader = `
+        uniform float uTime;
+        uniform float uAudioFrequency;
+        ${shader.vertexShader}
+      `;
+
+      // 3. Inject vertex displacement logic
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `
+        #include <begin_vertex>
+        
+        // 3D Sine wave pulse/distortion (Audio Reactive Baseline)
+        float frequency = 2.0;
+        // Amp up the distortion massively when the bass hits via uAudioFrequency
+        float amplitude = 0.08 + (uAudioFrequency * 0.4); 
+        float speed = 1.5;
+        
+        float pulse = sin(position.x * frequency + uTime * speed) * 
+                      sin(position.y * frequency + uTime * speed * 0.8) * 
+                      sin(position.z * frequency + uTime * speed * 1.2);
+                      
+        // Displace along the surface normal
+        transformed += normal * (pulse * amplitude);
+        `
+      );
+
+      // 4. Inject into fragment shader to glow on bass hits
+      shader.fragmentShader = `
+        uniform float uTime;
+        uniform float uAudioFrequency;
+        ${shader.fragmentShader}
+      `;
+
+      // Hook into the very end of the fragment shader for standard materials
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <dithering_fragment>',
+        `
+        #include <dithering_fragment>
+        
+        // Add a pulsing cybenertic blue glow proportional to the audio frequency
+        vec3 glowColor = vec3(0.024, 0.714, 0.835); // #06b6d4 (cyan)
+        gl_FragColor.rgb += glowColor * (uAudioFrequency * 0.5);
+        `
+      );
+    },
+    [customUniforms]
+  );
+
   return (
-    <mesh ref={meshRef}>
-      <sphereGeometry args={[0.5, 32, 32]} />
-      <meshBasicMaterial
-        color="#00ff88"
-        transparent
-        opacity={0.3}
-      />
-    </mesh>
+    <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.3}>
+      <Sphere ref={meshRef} args={[1.2, 64, 64]}>
+        <MeshTransmissionMaterial
+          ref={materialRef}
+          onBeforeCompile={onBeforeCompile}
+          transmission={1}
+          roughness={0.05}
+          thickness={0.8}
+          ior={1.5}
+          chromaticAberration={0.06}
+          distortion={0.3}
+          distortionScale={0.4}
+          temporalDistortion={0.1}
+          color="#0a1628"
+          attenuationColor="#06b6d4"
+          attenuationDistance={0.6}
+          backside
+          samples={8}
+          resolution={512}
+        />
+      </Sphere>
+    </Float>
   );
 }
 
 // ============================================================================
-// SCENE SETUP
+// SCENE CONTENT — composes all 3D elements
 // ============================================================================
 interface SceneContentProps {
   mouseX: number;
   mouseY: number;
   scrollProgress: number;
+  audioFrequency: number;
 }
 
-function SceneContent({ mouseX, mouseY, scrollProgress }: SceneContentProps) {
+function SceneContent({ mouseX, mouseY, scrollProgress, audioFrequency }: SceneContentProps) {
   const groupRef = useRef<THREE.Group>(null);
+  const { gl } = useThree();
 
-  // Drive scale from scrollProgress
+  // WebGL Renderer disposal on unmount to prevent invisible memory leaks
+  useEffect(() => {
+    return () => {
+      // Only strictly dispose if the R3F component totally unmounts
+      gl.dispose();
+    };
+  }, [gl]);
+
   useFrame(() => {
     if (groupRef.current) {
-      const scale = 1 + scrollProgress * 20;
+      const scale = 1 + scrollProgress * 15;
       groupRef.current.scale.setScalar(scale);
     }
   });
+
   return (
     <>
-      {/* Ambient lighting */}
-      <ambientLight intensity={0.2} />
+      {/* Ambient fill */}
+      <ambientLight intensity={0.15} />
 
-      {/* Point light that follows mouse */}
+      {/* Key light — follows mouse */}
       <pointLight
-        position={[mouseX * 5, mouseY * 5, 3]}
-        intensity={2}
-        color="#00ff88"
+        position={[mouseX * 4, mouseY * 4, 4]}
+        intensity={1.5}
+        color="#06b6d4"
       />
 
-      {/* Secondary lights */}
-      <pointLight position={[-5, 5, 5]} intensity={0.5} color="#00ffff" />
-      <pointLight position={[5, -5, -5]} intensity={0.3} color="#ffcc00" />
+      {/* Rim lights */}
+      <pointLight position={[-6, 4, 4]} intensity={0.3} color="#8b5cf6" />
+      <pointLight position={[6, -4, -4]} intensity={0.2} color="#22d3ee" />
 
-      {/* Zoomable group — scales with scroll */}
+      {/* Zoomable group */}
       <group ref={groupRef}>
-        {/* Main quantum core */}
-        <QuantumCore mouseX={mouseX} mouseY={mouseY} />
+        {/* Glass core (refracts everything behind it) */}
+        <GlassCore mouseX={mouseX} mouseY={mouseY} audioFrequency={audioFrequency} />
 
         {/* Data stream particles */}
         <DataStream />
@@ -386,10 +311,39 @@ function SceneContent({ mouseX, mouseY, scrollProgress }: SceneContentProps) {
         {/* Wireframe shell */}
         <WireframeSphere />
 
-        {/* Inner glowing core */}
+        {/* Emissive nucleus (glows through glass) */}
         <InnerCore />
       </group>
     </>
+  );
+}
+
+// ============================================================================
+// POST-PROCESSING — Bloom + Chromatic Aberration
+// ============================================================================
+function PostEffects({ scrollProgress }: { scrollProgress: number }) {
+  const offsetRef = useRef(new THREE.Vector2(0, 0));
+
+  useFrame(() => {
+    const intensity = scrollProgress * 0.004;
+    offsetRef.current.set(intensity, intensity);
+  });
+
+  return (
+    <EffectComposer multisampling={0}>
+      <Bloom
+        luminanceThreshold={0.9}
+        luminanceSmoothing={0.4}
+        intensity={0.6}
+        blendFunction={BlendFunction.ADD}
+      />
+      <ChromaticAberration
+        blendFunction={BlendFunction.NORMAL}
+        offset={offsetRef.current}
+        radialModulation={false}
+        modulationOffset={0}
+      />
+    </EffectComposer>
   );
 }
 
@@ -402,21 +356,23 @@ interface HeroSceneProps {
 
 export default function HeroScene({ scrollProgress = 0 }: HeroSceneProps) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [dpr, setDpr] = useState<[number, number]>([1, 2]); // Dynamic DPR for performance
+  const { audioFrequency } = useAudio();
   const isMobile = useMobile();
 
+  // Track mouse
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      // Normalize to -1 to 1
-      const x = (e.clientX / window.innerWidth) * 2 - 1;
-      const y = -(e.clientY / window.innerHeight) * 2 + 1;
-      setMousePosition({ x, y });
+      setMousePosition({
+        x: (e.clientX / window.innerWidth) * 2 - 1,
+        y: -(e.clientY / window.innerHeight) * 2 + 1,
+      });
     };
-
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Update clock every second
+  // Update clock
   useEffect(() => {
     const updateTime = () => {
       const el = document.getElementById('current-time');
@@ -432,100 +388,99 @@ export default function HeroScene({ scrollProgress = 0 }: HeroSceneProps) {
       id="hero-scene"
       className="absolute inset-0 z-0"
       style={{
-        background: 'radial-gradient(ellipse at center, #0a0a0a 0%, #000000 100%)',
+        background: 'radial-gradient(ellipse at center, #0d1117 0%, #000000 70%)',
         opacity: 1 - Math.pow(scrollProgress, 3),
       }}
     >
-      {/* Grid overlay */}
-      <div className="absolute inset-0 terminal-grid opacity-50" />
+      {/* Subtle dot grid */}
+      <div className="absolute inset-0 terminal-grid opacity-30" />
 
-      {/* Scan line effect */}
+      {/* Scan line */}
       <div className="absolute inset-0 scan-line pointer-events-none" />
 
-      {/* Noise overlay */}
+      {/* Film grain */}
       <div className="absolute inset-0 noise-overlay pointer-events-none" />
 
-      {/* Three.js Canvas */}
+      {/* Three.js Canvas with Accessibility labels */}
       <Canvas
-        camera={{ position: [0, 0, isMobile ? 6 : 5], fov: 60 }}
-        dpr={isMobile ? [1, 1.5] : [1, 2]}
+        camera={{ position: [0, 0, isMobile ? 6.5 : 5.5], fov: 50 }}
+        dpr={dpr}
         gl={{
           antialias: true,
           alpha: true,
-          powerPreference: 'high-performance'
+          powerPreference: 'high-performance',
         }}
         style={{ background: 'transparent' }}
+        aria-label="Interactive 3D Glass Core Visualization"
+        role="img"
       >
+        <PerformanceMonitor
+          onDecline={() => setDpr([1, 1])}
+          onIncline={() => setDpr([1, 2])}
+        />
         <SceneContent
           mouseX={mousePosition.x}
           mouseY={mousePosition.y}
           scrollProgress={scrollProgress}
+          audioFrequency={audioFrequency}
         />
+        <PostEffects scrollProgress={scrollProgress} />
       </Canvas>
 
       {/* Hero Text Overlay */}
-      <div id="hero-text-overlay" className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+      <div
+        id="hero-text-overlay"
+        className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10"
+      >
         <div className="text-center px-4">
-          {/* Status indicator */}
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <span className="w-2 h-2 bg-neon rounded-full animate-pulse" />
-            <span className="text-neon/60 font-mono text-xs tracking-[0.3em] uppercase">
+          {/* Status tag */}
+          <div className="flex items-center justify-center gap-2 mb-8" aria-hidden="true">
+            <span className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
+            <span className="text-accent/50 font-mono text-xs tracking-[0.4em] uppercase">
               System Online
             </span>
           </div>
 
-          {/* Main title */}
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-4">
-            <span className="text-white font-display">ANMOL JAIN</span>
-            <span className="text-neon text-glow-neon">_</span>
+          {/* Main title — display font */}
+          <h1 className="text-6xl md:text-8xl lg:text-9xl font-display font-bold tracking-tight mb-4 select-all">
+            <span className="text-white">QUANT</span>
+            <span className="text-accent text-glow-accent">_</span>
           </h1>
 
           {/* Subtitle */}
-          <p className="text-lg md:text-xl text-white/40 font-mono tracking-[0.2em] uppercase mb-8">
-            Developer • Problem Solver • Algorithm Architect
+          <p className="text-muted-better md:text-lg font-mono tracking-[0.2em] uppercase mb-12">
+            Developer · Quant · Algorithm Architect
           </p>
 
           {/* Scroll indicator */}
-          <div className="flex flex-col items-center gap-2 animate-bounce mt-12">
-            <span className="text-neon/40 font-mono text-xs tracking-[0.2em] uppercase">
+          <div className="flex flex-col items-center gap-3 animate-bounce" aria-hidden="true">
+            <span className="text-accent/40 font-mono text-xs tracking-[0.3em] uppercase">
               Scroll to explore
             </span>
-            <svg
-              className="w-6 h-6 text-neon/40"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 14l-7 7m0 0l-7-7m7 7V3"
-              />
+            <svg className="w-5 h-5 text-accent/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
             </svg>
           </div>
         </div>
       </div>
 
-      {/* Corner decorations */}
-      <div className="absolute top-4 left-4 text-neon/30 font-mono text-xs">
+      {/* Corner HUD elements */}
+      <div className="absolute top-4 left-4 text-white/20 font-mono text-[10px] space-y-0.5 pointer-events-none" aria-hidden="true">
         <div>LAT: 40.7128°</div>
         <div>LNG: -74.0060°</div>
       </div>
-      <div className="absolute top-4 right-4 text-neon/30 font-mono text-xs text-right">
+      <div className="absolute top-4 right-4 text-white/20 font-mono text-[10px] text-right space-y-0.5 pointer-events-none" aria-hidden="true">
         <div id="current-time">00:00:00</div>
-        <div>EST</div>
+        <div>UTC-5</div>
       </div>
-      <div className="absolute bottom-4 left-4 text-neon/30 font-mono text-xs">
-        <div>SYS.BUILD.2024</div>
-        <div>REV.1.0.0</div>
+      <div className="absolute bottom-4 left-4 text-white/20 font-mono text-[10px] space-y-0.5 pointer-events-none" aria-hidden="true">
+        <div>SYS.BUILD.2025</div>
+        <div>REV.2.1.0</div>
       </div>
-      <div className="absolute bottom-4 right-4 text-neon/30 font-mono text-xs text-right">
-        <div>FPS: 60</div>
+      <div className="absolute bottom-4 right-4 text-white/20 font-mono text-[10px] text-right space-y-0.5 pointer-events-none" aria-hidden="true">
+        <div>FPS: {dpr[1] === 2 ? '60+' : '<60'}</div>
         <div>RENDER: ACTIVE</div>
       </div>
-
-      {/* Time update via effect instead of script tag */}
     </div>
   );
 }

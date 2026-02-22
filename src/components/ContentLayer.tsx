@@ -1,142 +1,31 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
   Cpu,
-  Database,
   Globe,
   Server,
   Code2,
-  TrendingUp,
   Github,
   Linkedin,
   Mail,
   Terminal,
-  Zap,
-  Target,
-  Award,
-  BookOpen
 } from 'lucide-react';
+import ProjectsSection from './ProjectsSection';
+
+gsap.registerPlugin(ScrollTrigger);
 
 // ============================================================================
 // TYPES
 // ============================================================================
-interface Project {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  tech: string[];
-  icon: React.ReactNode;
-  status: 'deployed' | 'research' | 'active';
-  metrics?: { label: string; value: string }[];
-}
-
 interface Stat {
   label: string;
   value: string;
   change?: string;
   positive?: boolean;
 }
-
-// ============================================================================
-// PROJECTS DATA
-// ============================================================================
-const projects: Project[] = [
-  {
-    id: 'lstm-forecaster',
-    title: 'LSTM Stock Forecaster',
-    category: 'Research',
-    description: 'Deep learning model for financial time-series prediction. Utilizes LSTM networks with attention mechanisms for multi-step ahead forecasting.',
-    tech: ['Python', 'TensorFlow', 'Pandas', 'NumPy'],
-    icon: <TrendingUp className="w-5 h-5" />,
-    status: 'research',
-    metrics: [
-      { label: 'RMSE', value: '0.0234' },
-      { label: 'Accuracy', value: '87.3%' }
-    ]
-  },
-  {
-    id: 'hft-engine',
-    title: 'HFT Engine',
-    category: 'C++',
-    description: 'High-frequency trading engine with nanosecond-latency order matching. Custom memory allocator and lock-free data structures.',
-    tech: ['C++20', 'Linux', 'DPDK', 'FPGA'],
-    icon: <Zap className="w-5 h-5" />,
-    status: 'active',
-    metrics: [
-      { label: 'Latency', value: '47ns' },
-      { label: 'Throughput', value: '1.2M/s' }
-    ]
-  },
-  {
-    id: 'coderank-arena',
-    title: 'CodeRank Arena',
-    category: 'MERN',
-    description: 'Real-time competitive coding platform with WebSocket-based multiplayer. Advanced code execution sandbox with container isolation.',
-    tech: ['React', 'Node.js', 'MongoDB', 'Docker'],
-    icon: <Target className="w-5 h-5" />,
-    status: 'deployed',
-    metrics: [
-      { label: 'Users', value: '12K+' },
-      { label: 'Matches', value: '45K+' }
-    ]
-  },
-  {
-    id: 'sentiment-api',
-    title: 'Sentiment-Metric API',
-    category: 'Go',
-    description: 'Financial news sentiment analyzer processing 10K+ articles daily. NLP pipeline with custom financial entity recognition.',
-    tech: ['Go', 'Redis', 'PostgreSQL', 'NLP'],
-    icon: <Database className="w-5 h-5" />,
-    status: 'deployed',
-    metrics: [
-      { label: 'Articles/day', value: '12K' },
-      { label: 'Latency', value: '23ms' }
-    ]
-  },
-  {
-    id: 'quant-dashboard',
-    title: 'Quant Dashboard',
-    category: 'React',
-    description: 'Real-time market data visualization platform with custom charting engine. Supports 50+ technical indicators and algorithmic strategy backtesting.',
-    tech: ['React', 'D3.js', 'WebSocket', 'Charts'],
-    icon: <BookOpen className="w-5 h-5" />,
-    status: 'active',
-    metrics: [
-      { label: 'Indicators', value: '50+' },
-      { label: 'Data feeds', value: '15' }
-    ]
-  },
-  {
-    id: 'algo-visualizer',
-    title: 'Algo-Visualizer',
-    category: 'JavaScript',
-    description: 'Interactive visualization of pathfinding and sorting algorithms. Educational platform with step-by-step execution and complexity analysis.',
-    tech: ['JavaScript', 'Canvas', 'WebGL', 'Algorithms'],
-    icon: <Code2 className="w-5 h-5" />,
-    status: 'deployed',
-    metrics: [
-      { label: 'Algorithms', value: '25' },
-      { label: 'Views', value: '89K' }
-    ]
-  },
-  {
-    id: 'ecommerce-suite',
-    title: 'E-Commerce Suite',
-    category: 'MERN',
-    description: 'Scalable retail engine handling 100K+ concurrent users. Microservices architecture with event-driven inventory management.',
-    tech: ['React', 'Node.js', 'MongoDB', 'AWS'],
-    icon: <Globe className="w-5 h-5" />,
-    status: 'deployed',
-    metrics: [
-      { label: 'Concurrent', value: '100K' },
-      { label: 'Uptime', value: '99.9%' }
-    ]
-  }
-];
 
 // ============================================================================
 // STATS DATA
@@ -160,107 +49,22 @@ interface TechItemProps {
 
 function TechItem({ name, level, icon, description }: TechItemProps) {
   return (
-    <div className="group relative p-4 bg-obsidian/50 border border-neon/10 rounded-lg hover:border-neon/30 transition-all duration-300">
+    <div className="group relative p-4 bg-surface border border-white/[0.04] rounded-xl hover:border-accent/15 transition-all duration-500">
       <div className="flex items-center gap-3 mb-2">
-        <div className="text-neon">{icon}</div>
-        <span className="font-mono text-white text-sm">{name}</span>
+        <div className="text-accent/60">{icon}</div>
+        <span className="font-mono text-white/80 text-sm">{name}</span>
       </div>
-      <p className="text-white/40 text-xs font-mono mb-3">{description}</p>
-      <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+      <p className="text-white/25 text-xs font-mono mb-3">{description}</p>
+      <div className="h-px bg-white/[0.04] rounded-full overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-neon to-terminal-cyan transition-all duration-500"
+          className="h-full bg-gradient-to-r from-accent/60 to-accent/20 transition-all duration-700"
           style={{ width: `${level}%` }}
         />
       </div>
-      <div className="mt-1 text-right">
-        <span className="text-neon/60 font-mono text-xs">{level}%</span>
+      <div className="mt-1.5 text-right">
+        <span className="text-accent/30 font-mono text-xs">{level}%</span>
       </div>
     </div>
-  );
-}
-
-// ============================================================================
-// PROJECT CARD
-// ============================================================================
-interface ProjectCardProps {
-  project: Project;
-  index: number;
-}
-
-function ProjectCard({ project, index }: ProjectCardProps) {
-  const statusColors = {
-    deployed: 'bg-neon/20 text-neon border-neon/30',
-    research: 'bg-cyber/20 text-cyber border-cyber/30',
-    active: 'bg-terminal-cyan/20 text-terminal-cyan border-terminal-cyan/30'
-  };
-
-  return (
-    <Card className="group relative bg-obsidian/80 border border-neon/10 rounded-xl overflow-hidden hover:border-neon/40 transition-all duration-500 hover:glow-neon">
-      {/* Index number */}
-      <div className="absolute top-4 right-4 text-neon/20 font-mono text-4xl font-bold">
-        {String(index + 1).padStart(2, '0')}
-      </div>
-
-      <CardContent className="p-6">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-neon/10 flex items-center justify-center text-neon group-hover:bg-neon/20 transition-colors">
-              {project.icon}
-            </div>
-            <div>
-              <h3 className="font-display font-semibold text-white group-hover:text-neon transition-colors">
-                {project.title}
-              </h3>
-              <span className="text-xs font-mono text-white/40">{project.category}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Description */}
-        <p className="text-white/60 text-sm font-mono leading-relaxed mb-4">
-          {project.description}
-        </p>
-
-        {/* Metrics */}
-        {project.metrics && (
-          <div className="flex gap-4 mb-4">
-            {project.metrics.map((metric) => (
-              <div key={metric.label} className="bg-white/5 rounded px-3 py-2">
-                <div className="text-neon font-mono text-sm font-bold">{metric.value}</div>
-                <div className="text-white/40 font-mono text-xs">{metric.label}</div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Tech stack */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {project.tech.map((tech) => (
-            <Badge
-              key={tech}
-              variant="outline"
-              className="text-xs font-mono border-neon/20 text-neon/70 hover:border-neon/40"
-            >
-              {tech}
-            </Badge>
-          ))}
-        </div>
-
-        {/* Status */}
-        <div className="flex items-center justify-between">
-          <Badge className={`text-xs font-mono border ${statusColors[project.status]}`}>
-            {project.status.toUpperCase()}
-          </Badge>
-          <button className="text-neon/50 hover:text-neon font-mono text-xs flex items-center gap-1 transition-colors">
-            View Project
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-          </button>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -272,6 +76,7 @@ export default function ContentLayer() {
   const [showCursor, setShowCursor] = useState(true);
   const [typewriterStarted, setTypewriterStarted] = useState(false);
   const aboutRef = useRef<HTMLElement>(null);
+  const projectsIntroRef = useRef<HTMLDivElement>(null);
   const fullText = 'The Alpha';
 
   // Start typewriter only when About section scrolls into view
@@ -312,68 +117,121 @@ export default function ContentLayer() {
     return () => clearInterval(timer);
   }, []);
 
+  // ── Projects intro scroll-driven title reveal ──────────────────────────
+  useEffect(() => {
+    const intro = projectsIntroRef.current;
+    if (!intro) return;
+
+    const label = intro.querySelector('.projects-intro-label');
+    const title = intro.querySelector('.projects-intro-title');
+    const line = intro.querySelector('.projects-intro-line');
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: intro,
+          start: 'top 80%',
+          end: 'bottom 30%',
+          scrub: 1,
+        },
+      });
+
+      // Line grows in from 0 height
+      if (line) {
+        tl.fromTo(
+          line,
+          { scaleY: 0, opacity: 0 },
+          { scaleY: 1, opacity: 1, duration: 0.3, ease: 'power2.out' },
+          0
+        );
+      }
+
+      // Label fades in and slides up
+      if (label) {
+        tl.fromTo(
+          label,
+          { y: 30, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.3, ease: 'power3.out' },
+          0.05
+        );
+      }
+
+      // Title fades in from below, then continues moving up
+      if (title) {
+        tl.fromTo(
+          title,
+          { y: 60, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.4, ease: 'power3.out' },
+          0.1
+        );
+        // Second phase: gently push upward + slight dim as we approach the pin
+        tl.to(
+          title,
+          { y: -30, opacity: 0.7, duration: 0.3, ease: 'power2.inOut' },
+          0.6
+        );
+      }
+    }, intro);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
     <div
       id="content-layer"
-      className="relative z-20"
-      style={{
-        background: '#000000'
-      }}
+      className="relative z-20 bg-black"
     >
-      {/* Top edge gradient */}
-      <div className="h-32 bg-gradient-to-b from-transparent to-obsidian" />
+      {/* Top edge gradient removed to allow Hero background to bleed through smoothly */}
 
-      {/* Main content wrapper */}
+      {/* ================================================================ */}
+      {/* ABOUT SECTION                                                    */}
+      {/* ================================================================ */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-        {/* ================================================================ */}
-        {/* ABOUT SECTION */}
-        {/* ================================================================ */}
         <section id="about" ref={aboutRef} className="py-24 md:py-32">
           {/* Section header */}
           <div className="flex items-center gap-4 mb-12">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neon/30 to-transparent" />
-            <h2 className="text-neon font-mono text-sm tracking-[0.3em] uppercase">
+            <div className="w-12 h-px bg-accent/20" />
+            <h2 className="text-accent/50 font-mono text-xs tracking-[0.3em] uppercase">
               About
             </h2>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neon/30 to-transparent" />
+            <div className="flex-1 h-px bg-white/[0.04]" />
           </div>
 
           {/* Title with typewriter */}
-          <div className="mb-12">
-            <h3 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white mb-4">
+          <div className="mb-16">
+            <h3 className="text-5xl md:text-6xl lg:text-7xl font-display font-bold text-white mb-6 tracking-tight">
               {typedText}
-              <span className={`text-neon ${showCursor ? 'opacity-100' : 'opacity-0'}`}>_</span>
+              <span className={`text-accent ${showCursor ? 'opacity-100' : 'opacity-0'}`}>_</span>
             </h3>
-            <p className="text-lg text-white/60 font-mono max-w-3xl leading-relaxed">
-              <span className="text-neon">&gt;</span> Quantitative developer specializing in high-frequency trading systems,
+            <p className="text-lg text-white/30 font-mono max-w-3xl leading-relaxed">
+              <span className="text-accent/40">&gt;</span> Quantitative developer specializing in high-frequency trading systems,
               algorithmic optimization, and machine learning applications in finance.
               Competitive programmer with a passion for elegant solutions to complex problems.
             </p>
           </div>
 
-          {/* Bloomberg Terminal Style Stats */}
-          <div className="mb-12">
-            <div className="flex items-center gap-2 mb-4">
-              <Terminal className="w-4 h-4 text-neon" />
-              <span className="font-mono text-xs text-neon/60 tracking-wider">PERFORMANCE_METRICS</span>
+          {/* Stats — Bloomberg Terminal Style */}
+          <div className="mb-16">
+            <div className="flex items-center gap-2 mb-6">
+              <Terminal className="w-4 h-4 text-accent/40" />
+              <span className="font-mono text-xs text-white/20 tracking-wider">PERFORMANCE_METRICS</span>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {stats.map((stat, i) => (
                 <div
                   key={stat.label}
-                  className="bg-obsidian border border-neon/10 rounded-lg p-4 hover:border-neon/30 transition-all"
+                  className="bg-surface border border-white/[0.04] rounded-xl p-5 hover:border-accent/10 transition-all duration-500"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-white/40 font-mono text-xs">{stat.label}</span>
-                    <span className="text-neon font-mono text-xs">{String(i + 1).padStart(2, '0')}</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-white/25 font-mono text-xs">{stat.label}</span>
+                    <span className="text-accent/20 font-mono text-xs">{String(i + 1).padStart(2, '0')}</span>
                   </div>
-                  <div className="text-2xl font-display font-bold text-white mb-1">
+                  <div className="text-3xl font-display font-bold text-white mb-1">
                     {stat.value}
                   </div>
                   {stat.change && (
-                    <div className={`font-mono text-xs flex items-center gap-1 ${stat.positive ? 'text-neon' : 'text-red-400'}`}>
+                    <div className={`font-mono text-xs flex items-center gap-1 ${stat.positive ? 'text-accent/60' : 'text-red-400/60'}`}>
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                       </svg>
@@ -387,9 +245,9 @@ export default function ContentLayer() {
 
           {/* Tech Stack */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Cpu className="w-4 h-4 text-neon" />
-              <span className="font-mono text-xs text-neon/60 tracking-wider">TECH_STACK</span>
+            <div className="flex items-center gap-2 mb-6">
+              <Cpu className="w-4 h-4 text-accent/40" />
+              <span className="font-mono text-xs text-white/20 tracking-wider">TECH_STACK</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -414,97 +272,102 @@ export default function ContentLayer() {
               <TechItem
                 name="Go"
                 level={85}
-                icon={<Database className="w-4 h-4" />}
+                icon={<Cpu className="w-4 h-4" />}
                 description="Systems & Microservices"
               />
             </div>
           </div>
         </section>
+      </div>
 
-        {/* ================================================================ */}
-        {/* PROJECTS SECTION */}
-        {/* ================================================================ */}
-        <section id="projects" className="py-24 md:py-32">
-          {/* Section header */}
-          <div className="flex items-center gap-4 mb-12">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-cyber/30 to-transparent" />
-            <h2 className="text-cyber font-mono text-sm tracking-[0.3em] uppercase">
-              Projects
-            </h2>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-cyber/30 to-transparent" />
-          </div>
+      {/* ================================================================ */}
+      {/* TRANSITION BRIDGE: About → Projects                              */}
+      {/* Scroll-driven title reveal — draws the eye into Projects         */}
+      {/* ================================================================ */}
+      <div
+        ref={projectsIntroRef}
+        className="relative flex flex-col items-center justify-center py-32 md:py-44"
+      >
+        {/* Animated vertical accent line */}
+        <div
+          className="projects-intro-line w-px h-20 bg-gradient-to-b from-transparent via-accent/30 to-accent/50 mb-8 origin-top"
+          style={{ transform: 'scaleY(0)' }}
+        />
 
-          {/* Title */}
-          <div className="mb-12">
-            <h3 className="text-4xl md:text-5xl font-display font-bold text-white mb-4">
-              <span className="text-cyber">$</span> Project_Folio
-            </h3>
-            <p className="text-lg text-white/60 font-mono max-w-3xl">
-              <span className="text-cyber">&gt;</span> A curated selection of systems, tools, and experiments.
-              Each project represents a unique challenge solved with precision and creativity.
-            </p>
-          </div>
+        {/* Animated label */}
+        <div className="projects-intro-label flex items-center gap-3 mb-4 opacity-0">
+          <div className="w-8 h-px bg-accent/30" />
+          <span className="text-accent/50 font-mono text-xs tracking-[0.3em] uppercase">
+            Case Studies
+          </span>
+          <div className="w-8 h-px bg-accent/30" />
+        </div>
 
-          {/* Project grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project, index) => (
-              <ProjectCard key={project.id} project={project} index={index} />
-            ))}
-          </div>
-        </section>
+        {/* Animated title */}
+        <h2
+          className="projects-intro-title text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white/90 tracking-tight text-center opacity-0"
+        >
+          High-Performance Engineering
+        </h2>
+      </div>
 
-        {/* ================================================================ */}
-        {/* CONTACT SECTION */}
-        {/* ================================================================ */}
+      {/* ================================================================ */}
+      {/* PROJECTS SECTION — horizontal scroll                             */}
+      {/* ================================================================ */}
+      <ProjectsSection />
+
+      {/* Fade back into vertical flow after Projects */}
+      <div className="h-24 md:h-32 bg-gradient-to-b from-black to-black" />
+
+      {/* ================================================================ */}
+      {/* CONTACT SECTION                                                  */}
+      {/* ================================================================ */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <section id="contact" className="py-24 md:py-32">
           {/* Section header */}
           <div className="flex items-center gap-4 mb-12">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-terminal-cyan/30 to-transparent" />
-            <h2 className="text-terminal-cyan font-mono text-sm tracking-[0.3em] uppercase">
+            <div className="w-12 h-px bg-accent/20" />
+            <h2 className="text-accent/50 font-mono text-xs tracking-[0.3em] uppercase">
               Contact
             </h2>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-terminal-cyan/30 to-transparent" />
+            <div className="flex-1 h-px bg-white/[0.04]" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Left: Terminal style contact */}
             <div>
-              <h3 className="text-4xl md:text-5xl font-display font-bold text-white mb-6">
-                <span className="text-terminal-cyan">&gt;</span> Let&apos;s Connect
+              <h3 className="text-4xl md:text-5xl font-display font-bold text-white mb-6 tracking-tight">
+                <span className="text-accent/50">&gt;</span> Let&apos;s Connect
               </h3>
-              <p className="text-white/60 font-mono mb-8">
+              <p className="text-white/30 font-mono mb-8 text-sm leading-relaxed">
                 Ready to collaborate on groundbreaking projects? Let&apos;s discuss how we can push the boundaries of technology together.
               </p>
 
               {/* Terminal command */}
-              <div className="bg-obsidian border border-neon/20 rounded-lg p-4 font-mono text-sm">
-                <div className="flex items-center gap-2 mb-3 border-b border-neon/10 pb-3">
-                  <div className="w-3 h-3 rounded-full bg-red-500/80" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/80" />
-                  <span className="ml-2 text-white/40 text-xs">quant@portfolio ~ %</span>
+              <div className="bg-surface border border-white/[0.04] rounded-xl p-5 font-mono text-sm">
+                <div className="flex items-center gap-2 mb-4 border-b border-white/[0.04] pb-4">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+                  <span className="ml-2 text-white/20 text-xs">quant@portfolio ~ %</span>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-white/60">
-                    <span className="text-neon">$</span> cat contact.json
+                  <div className="text-white/30">
+                    <span className="text-accent/50">$</span> cat contact.json
                   </div>
-                  <div className="text-terminal-cyan">
-                    {'{'}
+                  <div className="text-accent/40">{'{'}</div>
+                  <div className="pl-4 text-white/50">
+                    <span className="text-violet-400/60">&quot;email&quot;</span>: <span className="text-accent/70">&quot;hello@quant.dev&quot;</span>,
                   </div>
-                  <div className="pl-4 text-white/80">
-                    <span className="text-cyber">&quot;email&quot;</span>: <span className="text-neon">&quot;hello@quant.dev&quot;</span>,
+                  <div className="pl-4 text-white/50">
+                    <span className="text-violet-400/60">&quot;github&quot;</span>: <span className="text-accent/70">&quot;github.com/quant&quot;</span>,
                   </div>
-                  <div className="pl-4 text-white/80">
-                    <span className="text-cyber">&quot;github&quot;</span>: <span className="text-neon">&quot;github.com/quant&quot;</span>,
+                  <div className="pl-4 text-white/50">
+                    <span className="text-violet-400/60">&quot;linkedin&quot;</span>: <span className="text-accent/70">&quot;linkedin.com/in/quant&quot;</span>
                   </div>
-                  <div className="pl-4 text-white/80">
-                    <span className="text-cyber">&quot;linkedin&quot;</span>: <span className="text-neon">&quot;linkedin.com/in/quant&quot;</span>
-                  </div>
-                  <div className="text-terminal-cyan">
-                    {'}'}
-                  </div>
-                  <div className="text-white/60 mt-4">
-                    <span className="text-neon">$</span> echo &quot;Ready to collaborate!&quot; <span className="cursor-blink">▊</span>
+                  <div className="text-accent/40">{'}'}</div>
+                  <div className="text-white/30 mt-4">
+                    <span className="text-accent/50">$</span> echo &quot;Ready to collaborate!&quot; <span className="cursor-blink">▊</span>
                   </div>
                 </div>
               </div>
@@ -512,23 +375,23 @@ export default function ContentLayer() {
 
             {/* Right: Social links */}
             <div className="flex flex-col justify-center">
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* GitHub */}
                 <a
                   href="https://github.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-4 p-4 bg-obsidian border border-neon/10 rounded-lg hover:border-neon/30 transition-all hover:glow-neon"
+                  className="group flex items-center gap-4 p-4 bg-surface border border-white/[0.04] rounded-xl hover:border-accent/15 transition-all duration-500"
                 >
-                  <div className="w-12 h-12 rounded-lg bg-neon/10 flex items-center justify-center text-neon group-hover:bg-neon/20 transition-colors">
-                    <Github className="w-6 h-6" />
+                  <div className="w-11 h-11 rounded-lg bg-accent/5 flex items-center justify-center text-accent/50 group-hover:bg-accent/10 group-hover:text-accent transition-all duration-500">
+                    <Github className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-display font-semibold text-white group-hover:text-neon transition-colors">GitHub</div>
-                    <div className="text-white/40 font-mono text-sm">@quant</div>
+                    <div className="font-display font-semibold text-white/80 group-hover:text-accent transition-colors duration-300">GitHub</div>
+                    <div className="text-white/20 font-mono text-xs">@quant</div>
                   </div>
-                  <svg className="w-5 h-5 text-neon/50 ml-auto group-hover:text-neon transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  <svg className="w-4 h-4 text-white/10 ml-auto group-hover:text-accent/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </a>
 
@@ -537,34 +400,34 @@ export default function ContentLayer() {
                   href="https://linkedin.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-4 p-4 bg-obsidian border border-neon/10 rounded-lg hover:border-neon/30 transition-all hover:glow-neon"
+                  className="group flex items-center gap-4 p-4 bg-surface border border-white/[0.04] rounded-xl hover:border-accent/15 transition-all duration-500"
                 >
-                  <div className="w-12 h-12 rounded-lg bg-neon/10 flex items-center justify-center text-neon group-hover:bg-neon/20 transition-colors">
-                    <Linkedin className="w-6 h-6" />
+                  <div className="w-11 h-11 rounded-lg bg-accent/5 flex items-center justify-center text-accent/50 group-hover:bg-accent/10 group-hover:text-accent transition-all duration-500">
+                    <Linkedin className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-display font-semibold text-white group-hover:text-neon transition-colors">LinkedIn</div>
-                    <div className="text-white/40 font-mono text-sm">Connect professionally</div>
+                    <div className="font-display font-semibold text-white/80 group-hover:text-accent transition-colors duration-300">LinkedIn</div>
+                    <div className="text-white/20 font-mono text-xs">Connect professionally</div>
                   </div>
-                  <svg className="w-5 h-5 text-neon/50 ml-auto group-hover:text-neon transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  <svg className="w-4 h-4 text-white/10 ml-auto group-hover:text-accent/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </a>
 
                 {/* Email */}
                 <a
                   href="mailto:hello@quant.dev"
-                  className="group flex items-center gap-4 p-4 bg-obsidian border border-neon/10 rounded-lg hover:border-neon/30 transition-all hover:glow-neon"
+                  className="group flex items-center gap-4 p-4 bg-surface border border-white/[0.04] rounded-xl hover:border-accent/15 transition-all duration-500"
                 >
-                  <div className="w-12 h-12 rounded-lg bg-neon/10 flex items-center justify-center text-neon group-hover:bg-neon/20 transition-colors">
-                    <Mail className="w-6 h-6" />
+                  <div className="w-11 h-11 rounded-lg bg-accent/5 flex items-center justify-center text-accent/50 group-hover:bg-accent/10 group-hover:text-accent transition-all duration-500">
+                    <Mail className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-display font-semibold text-white group-hover:text-neon transition-colors">Email</div>
-                    <div className="text-white/40 font-mono text-sm">hello@quant.dev</div>
+                    <div className="font-display font-semibold text-white/80 group-hover:text-accent transition-colors duration-300">Email</div>
+                    <div className="text-white/20 font-mono text-xs">hello@quant.dev</div>
                   </div>
-                  <svg className="w-5 h-5 text-neon/50 ml-auto group-hover:text-neon transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  <svg className="w-4 h-4 text-white/10 ml-auto group-hover:text-accent/40 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </a>
               </div>
@@ -573,20 +436,20 @@ export default function ContentLayer() {
         </section>
 
         {/* ================================================================ */}
-        {/* FOOTER */}
+        {/* FOOTER                                                          */}
         {/* ================================================================ */}
-        <footer className="py-12 border-t border-neon/10">
+        <footer className="py-12 border-t border-white/[0.04]">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="text-white/40 font-mono text-sm">
-              © 2024 Quant Portfolio. All systems operational.
+            <div className="text-white/20 font-mono text-xs">
+              © 2025 Quant Portfolio. All systems operational.
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-neon rounded-full animate-pulse" />
-                <span className="text-neon/60 font-mono text-xs">ONLINE</span>
+                <div className="w-1.5 h-1.5 bg-accent/40 rounded-full animate-pulse" />
+                <span className="text-accent/30 font-mono text-xs">ONLINE</span>
               </div>
-              <div className="text-white/20 font-mono text-xs">
-                v1.0.0 | Built with Next.js
+              <div className="text-white/10 font-mono text-xs">
+                v2.0.0 | Built with Next.js
               </div>
             </div>
           </div>

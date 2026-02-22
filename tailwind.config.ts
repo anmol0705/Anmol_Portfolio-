@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
 import tailwindcssAnimate from "tailwindcss-animate";
+import typography from "@tailwindcss/typography";
 
 const config: Config = {
   darkMode: "class",
@@ -12,119 +13,106 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Terminal Luxury Palette
+        // ── Terminal Luxury v2 — Premium Muted Palette ──
         obsidian: {
           DEFAULT: '#0a0a0a',
-          50: '#171717',
-          100: '#141414',
+          50: '#1a1d23',
+          100: '#12141a',
           200: '#0f0f0f',
           300: '#0a0a0a',
           400: '#080808',
           500: '#050505',
-          600: '#030303',
-          700: '#020202',
-          800: '#010101',
-          900: '#000000',
         },
+        gunmetal: '#1a1d23',
+        surface: '#12141a',
+        accent: {
+          DEFAULT: '#06b6d4',
+          50: '#ecfeff',
+          100: '#cffafe',
+          200: '#a5f3fc',
+          300: '#67e8f9',
+          400: '#22d3ee',
+          500: '#06b6d4',
+          600: '#0891b2',
+          700: '#0e7490',
+          800: '#155e75',
+          900: '#164e63',
+        },
+        // legacy aliases
         neon: {
-          DEFAULT: '#00ff88',
-          50: '#b3ffd9',
-          100: '#99ffcc',
-          200: '#66ffb3',
-          300: '#33ff9f',
-          400: '#00ff88',
-          500: '#00e67a',
-          600: '#00cc6d',
-          700: '#00b35f',
-          800: '#009952',
-          900: '#008044',
+          DEFAULT: '#06b6d4',
+          400: '#22d3ee',
         },
         cyber: {
-          DEFAULT: '#ffcc00',
-          50: '#fff5cc',
-          100: '#ffeb99',
-          200: '#ffe066',
-          300: '#ffd633',
-          400: '#ffcc00',
-          500: '#e6b800',
-          600: '#cca300',
-          700: '#b38f00',
-          800: '#997a00',
-          900: '#806600',
+          DEFAULT: '#f59e0b',
+          400: '#fbbf24',
         },
-        matrix: {
-          DEFAULT: '#003300',
-          dark: '#001a00',
+        violet: {
+          DEFAULT: '#8b5cf6',
+          400: '#a78bfa',
         },
         terminal: {
-          green: '#39ff14',
-          amber: '#ffb000',
-          cyan: '#00ffff',
-          white: '#f0f0f0',
+          cyan: '#22d3ee',
+          green: '#34d399',
+          amber: '#fbbf24',
+          white: '#e4e4e7',
         },
         // Shadcn compatible
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
         card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))'
+          DEFAULT: 'var(--card)',
+          foreground: 'var(--card-foreground)',
         },
         popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))'
+          DEFAULT: 'var(--popover)',
+          foreground: 'var(--popover-foreground)',
         },
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))'
+          DEFAULT: 'var(--primary)',
+          foreground: 'var(--primary-foreground)',
         },
         secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))'
+          DEFAULT: 'var(--secondary)',
+          foreground: 'var(--secondary-foreground)',
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))'
-        },
-        accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))'
+          DEFAULT: 'var(--muted)',
+          foreground: 'var(--muted-foreground)',
         },
         destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))'
+          DEFAULT: 'var(--destructive)',
         },
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
+        border: 'var(--border)',
+        input: 'var(--input)',
+        ring: 'var(--ring)',
         chart: {
-          '1': 'hsl(var(--chart-1))',
-          '2': 'hsl(var(--chart-2))',
-          '3': 'hsl(var(--chart-3))',
-          '4': 'hsl(var(--chart-4))',
-          '5': 'hsl(var(--chart-5))'
-        }
+          '1': 'var(--chart-1)',
+          '2': 'var(--chart-2)',
+          '3': 'var(--chart-3)',
+          '4': 'var(--chart-4)',
+          '5': 'var(--chart-5)',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)'
+        sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        mono: ['JetBrains Mono', 'Fira Code', 'SF Mono', 'monospace'],
-        display: ['Inter', 'SF Pro Display', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-geist-mono)', 'JetBrains Mono', 'monospace'],
+        sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'Space Grotesk', 'sans-serif'],
       },
       animation: {
-        'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+        'pulse-glow': 'pulse-glow 3s ease-in-out infinite',
         'float': 'float 6s ease-in-out infinite',
-        'scan': 'scan 8s linear infinite',
-        'typewriter': 'typewriter 1s steps(40) infinite',
-        'blink': 'blink 1s step-end infinite',
-        'matrix-rain': 'matrix-rain 20s linear infinite',
+        'scan': 'scan 12s linear infinite',
       },
       keyframes: {
         'pulse-glow': {
-          '0%, 100%': { opacity: '0.5', filter: 'brightness(1)' },
-          '50%': { opacity: '1', filter: 'brightness(1.2)' },
+          '0%, 100%': { opacity: '0.4', filter: 'brightness(1)' },
+          '50%': { opacity: '0.8', filter: 'brightness(1.15)' },
         },
         'float': {
           '0%, 100%': { transform: 'translateY(0px)' },
@@ -134,30 +122,10 @@ const config: Config = {
           '0%': { transform: 'translateY(-100%)' },
           '100%': { transform: 'translateY(100%)' },
         },
-        'typewriter': {
-          'from': { width: '0' },
-          'to': { width: '100%' },
-        },
-        'blink': {
-          '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0' },
-        },
-        'matrix-rain': {
-          '0%': { transform: 'translateY(-100%)' },
-          '100%': { transform: 'translateY(100%)' },
-        },
       },
-      backgroundImage: {
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'grid-pattern': 'linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px)',
-      },
-      backgroundSize: {
-        'grid': '50px 50px',
-      },
-    }
+    },
   },
-  plugins: [tailwindcssAnimate],
+  plugins: [tailwindcssAnimate, typography],
 };
 
 export default config;
